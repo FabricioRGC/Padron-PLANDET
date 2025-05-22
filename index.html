@@ -91,7 +91,7 @@
 
           const nombreIndex = headers.findIndex(h => h.includes("nombre"));
           const sectorIndex = headers.findIndex(h => h.includes("sector") || h.includes("barrio"));
-          const manzanaIndex = headers.findIndex(h => h.includes("manzana"));
+          const manzanaIndex = headers.findIndex(h =>h.includes("manzana") || h.includes("mz"));
           const loteIndex = headers.findIndex(h => h.includes("lote"));
 
           const encontrados = [];
