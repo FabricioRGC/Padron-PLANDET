@@ -41,32 +41,18 @@
       border-radius: 6px;
       cursor: pointer;
     }
-    .accordion {
-      margin-top: 2rem;
-      text-align: left;
-    }
-    .item {
-      background-color: #e5e7eb;
-      margin-bottom: 1rem;
-      border-radius: 6px;
-      overflow: hidden;
-    }
-    .item summary {
-      padding: 1rem;
-      cursor: pointer;
-      font-weight: bold;
-    }
-    .item table {
+    table {
       width: 100%;
+      margin-top: 2rem;
       border-collapse: collapse;
     }
-    .item th, .item td {
+    th, td {
       padding: 0.5rem 1rem;
-      border-top: 1px solid #d1d5db;
-    }
-    .item th {
-      background-color: #f9fafb;
+      border: 1px solid #d1d5db;
       text-align: left;
+    }
+    th {
+      background-color: #f9fafb;
     }
   </style>
 </head>
@@ -75,7 +61,7 @@
     <h1>Consulta de Padrón</h1>
     <input type="text" id="searchInput" placeholder="Ingrese nombre o apellido"/>
     <button onclick="buscar()">Verificar</button>
-    <div id="resultados" class="accordion"></div>
+    <div id="resultados"></div>
   </div>
 
   <script>
@@ -84,7 +70,7 @@
     async function cargarCSV() {
       const response = await fetch("padron.csv");
       const text = await response.text();
-      const rows = text.trim().split("\\n").slice(1);
+      const rows = text.trim().split("\n").slice(1);
       data = rows.map(row => {
         const [num, nombre, sector, mz, lote, cod] = row.split(",").map(c => c.trim());
         return { nombre, sector, mz, lote };
@@ -109,25 +95,32 @@
         return;
       }
 
-      const nombresUnicos = [...new Set(resultados.map(item => item.nombre))];
-
-      nombresUnicos.forEach(nombre => {
-        const detalles = resultados.filter(item => item.nombre === nombre);
-        const html = `
-        <details class="item">
-          <summary>${nombre}</summary>
-          <table>
-            <thead>
-              <tr><th>Sector / Barrio</th><th>Manzana</th><th>Lote</th></tr>
-            </thead>
-            <tbody>
-              ${detalles.map(d => `<tr><td>${d.sector}</td><td>${d.mz}</td><td>${d.lote}</td></tr>`).join("")}
-            </tbody>
-          </table>
-        </details>
-        `;
-        contenedor.innerHTML += html;
+      resultados.sort((a, b) => {
+        return a.nombre.localeCompare(b.nombre) ||
+               a.sector.localeCompare(b.sector) ||
+               a.mz.localeCompare(b.mz) ||
+               a.lote.localeCompare(b.lote);
       });
+
+      const tabla = `
+        <table>
+          <thead>
+            <tr><th>Nombre</th><th>Barrio / Sector</th><th>Manzana</th><th>Lote</th></tr>
+          </thead>
+          <tbody>
+            ${resultados.map(d => `
+              <tr>
+                <td>${d.nombre}</td>
+                <td>${d.sector}</td>
+                <td>${d.mz}</td>
+                <td>${d.lote}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      `;
+
+      contenedor.innerHTML = tabla;
     }
 
     cargarCSV();
