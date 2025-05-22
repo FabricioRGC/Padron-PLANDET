@@ -2,55 +2,54 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Buscar Persona - Padrón de Barrios</title>
+  <title>Verificar Padrón</title>
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; background: #f4f4f4; }
-    h1 { color: #333; }
+    body { font-family: Arial, sans-serif; background: #f0f0f0; padding: 20px; }
     input, button {
-      padding: 10px; margin: 10px 0;
-      font-size: 1rem; width: 100%;
+      padding: 10px; font-size: 16px; width: 100%; margin: 10px 0;
     }
-    #resultado { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 0 5px #ccc; margin-top: 20px; }
+    #resultado {
+      font-weight: bold; padding: 15px;
+      background: white; border-radius: 8px;
+      box-shadow: 0 0 5px #ccc;
+      text-align: center;
+    }
   </style>
 </head>
 <body>
-  <h1>Buscar Persona en el Padrón</h1>
+  <h1>Consulta de Padrón</h1>
   <input type="text" id="nombreInput" placeholder="Escribe el nombre completo">
-  <button onclick="buscarPersona()">Buscar</button>
+  <button onclick="verificar()">Verificar</button>
   <div id="resultado"></div>
 
   <script>
     const URL_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRZymufO9zNb7XULXEt21mUWgytfrGsyV1c3tRRCLHJF5YxYRb75yiJc-lLfWajOI_27Y-olTwd9b7L/pub?gid=0&single=true&output=csv";
 
-    function buscarPersona() {
+    function verificar() {
       const nombreBuscado = document.getElementById("nombreInput").value.trim().toLowerCase();
+      const resultado = document.getElementById("resultado");
+
       fetch(URL_CSV)
         .then(response => response.text())
         .then(data => {
           const filas = data.split("\n").map(row => row.split(","));
           const headers = filas[0];
           const nombreIndex = headers.findIndex(h => h.toLowerCase().includes("nombre"));
-          const resultado = document.getElementById("resultado");
 
-          const persona = filas.find((fila, i) => {
+          const encontrado = filas.some((fila, i) => {
             if (i === 0 || !fila[nombreIndex]) return false;
             return fila[nombreIndex].trim().toLowerCase() === nombreBuscado;
           });
 
-          if (persona) {
-            let html = `<h3>Datos encontrados:</h3><ul>`;
-            headers.forEach((header, i) => {
-              html += `<li><strong>${header.trim()}:</strong> ${persona[i]}</li>`;
-            });
-            html += `</ul>`;
-            resultado.innerHTML = html;
+          if (encontrado) {
+            resultado.innerHTML = "✅ <strong>se encuentra</strong> en el padrón.";
           } else {
-            resultado.innerHTML = "<p>No se encontró a esa persona.</p>";
+            resultado.innerHTML = "❌ <strong>NO se encuentra</strong> en el padrón.";
           }
         })
         .catch(error => {
-          console.error("Error al leer el CSV", error);
-          document.getElementById("resultado").innerText = "Error al cargar los datos.";
+          console.error("Error:", error);
+          resultado.innerText = "⚠️ Error al cargar el padrón.";
         });
     }
   </script>
