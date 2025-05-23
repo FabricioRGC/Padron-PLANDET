@@ -58,7 +58,7 @@
           }
 
           if (resultados.length === 0) {
-            resultado.innerHTML = "<div class='alert alert-danger'>❌ No se encontraron resultados.</div>";
+            resultado.innerHTML = "<div class='alert alert-danger'>No se encontraron resultados.</div>";
             return;
           }
 
@@ -83,7 +83,7 @@
           });
           html += `</div>`;
 
-          resultado.innerHTML = `<div class="alert alert-success">✅ Se encontraron ${resultados.length} resultado(s):</div>` + html;
+          resultado.innerHTML = `<div class="alert alert-success">Se encontraron ${resultados.length} resultado(s):</div>` + html;
         })
         .catch(err => {
           resultado.innerHTML = "<div class='alert alert-warning'>⚠️ Error al cargar los datos.</div>";
