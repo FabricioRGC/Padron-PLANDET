@@ -7,124 +7,215 @@
   <link rel="icon" href="LOGO_PLANDET_icon.png" type="image/x-icon">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
+    :root {
+      --azul-principal: #1a4257;
+      --azul-secundario: #125d63;
+      --acento-verde: #172522;
+      --hover-verde: #66e0c4;
+      --texto-blanco: #f9f9f9;
+    }
+
     body {
-      background: #1c6b55;
+      background: var(--azul-principal);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      padding: 15px;
     }
+
     .container {
-      max-width: 90%;
+      max-width: 720px;
       margin: 40px auto;
-      padding-top: 10px;
-      background-color: #627e77;
-      border: 1px solid #475a55;
-      border-radius: 10px;
+      padding: 25px;
+      background-color: var(--azul-secundario);
+      border-radius: 16px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
     }
 
+    h1 {
+      color: var(--texto-blanco);
+      font-weight: 700;
+    }
 
+    #sugerenciasCustom {
+      position: absolute;
+      z-index: 1000;
+      background-color: #fff;
+      width: 100%;
+      max-height: 200px;
+      overflow-y: auto;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+      display: none;
+    }
+
+    #sugerenciasCustom div {
+      padding: 10px 14px;
+      cursor: pointer;
+      border-bottom: 1px solid #e0e0e0;
+    }
+
+    #sugerenciasCustom div:hover {
+      background-color: var(--hover-verde);
+    }
+
+    .btn {
+      font-weight: bold;
+      font-size: 16px;
+      background-color: var(--acento-verde);
+      color: white;
+      border: none;
+    }
+
+    .btn:hover {
+      background-color: var(--hover-verde);
+      color: #000;
+    }
+
+    .accordion-button {
+      background-color: var(--acento-verde);
+      color: white;
+    }
+
+    .accordion-body {
+      background-color: #f5f5f5;
+      border-radius: 6px;
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1 class="text-center mb-4" style="color: rgb(224, 243, 236);">Padrón ALTO TRUJILLO</h1>
-    <input type="text" id="nombreInput" class="form-control mb-3" placeholder="Escriba su nombre o apellido">
-    <button class="btn w-100" style="background-color: #1F4B66; color: white;" onclick="verificar()">Buscar</button>
-    <div id="resultado" class="mt-4"></div>
+    <h1 class="text-center mb-4">Padrón ALTO TRUJILLO</h1>
+
+    <div style="position: relative;">
+      <input type="text" id="nombreInput" class="form-control mb-3" placeholder="Escriba su nombre o apellido" oninput="mostrarSugerencias()">
+      <div id="sugerenciasCustom"></div>
+    </div>
+
+    <button class="btn w-100 mb-3" onclick="verificar()">Buscar</button>
+    <div id="resultado" class="mt-3"></div>
   </div>
 
- <script>
-  const URL_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRZymufO9zNb7XULXEt21mUWgytfrGsyV1c3tRRCLHJF5YxYRb75yiJc-lLfWajOI_27Y-olTwd9b7L/pub?gid=0&single=true&output=csv";
-  let datosCargados = [];
+  <script>
+    const URL_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRZymufO9zNb7XULXEt21mUWgytfrGsyV1c3tRRCLHJF5YxYRb75yiJc-lLfWajOI_27Y-olTwd9b7L/pub?gid=0&single=true&output=csv";
+    let datosCargados = [];
 
-  async function cargarDatos() {
-    if (datosCargados.length > 0) return datosCargados;
+    async function cargarDatos() {
+      if (datosCargados.length > 0) return datosCargados;
+      const res = await fetch(URL_CSV);
+      const texto = await res.text();
+      const filas = texto.trim().split("\n").map(f => f.split(","));
+      const headers = filas[0].map(h => h.toLowerCase().trim());
 
-    const res = await fetch(URL_CSV);
-    const texto = await res.text();
-    const filas = texto.trim().split("\n").map(fila => fila.split(","));
-    const headers = filas[0].map(h => h.toLowerCase().trim());
+      const nombreIndex = headers.findIndex(h => h.includes("nombre"));
+      const sectorIndex = headers.findIndex(h => h.includes("sector") || h.includes("barrio"));
+      const manzanaIndex = headers.findIndex(h => h.includes("manzana") || h.includes("mz"));
+      const loteIndex = headers.findIndex(h => h.includes("lote"));
 
-    const nombreIndex = headers.findIndex(h => h.includes("nombre"));
-    const sectorIndex = headers.findIndex(h => h.includes("sector") || h.includes("barrio"));
-    const manzanaIndex = headers.findIndex(h => h.includes("manzana") || h.includes("mz"));
-    const loteIndex = headers.findIndex(h => h.includes("lote"));
-
-    if (nombreIndex === -1) throw new Error("No se encontró la columna de 'nombre' en el archivo CSV.");
-
-    for (let i = 1; i < filas.length; i++) {
-      const fila = filas[i];
-      datosCargados.push({
-        nombre: fila[nombreIndex]?.trim() || "Sin nombre",
-        sector: fila[sectorIndex]?.trim() || "No disponible",
-        manzana: fila[manzanaIndex]?.trim() || "No disponible",
-        lote: fila[loteIndex]?.trim() || "No disponible"
-      });
+      for (let i = 1; i < filas.length; i++) {
+        const fila = filas[i];
+        datosCargados.push({
+          nombre: fila[nombreIndex]?.trim() || "Sin nombre",
+          sector: fila[sectorIndex]?.trim() || "No disponible",
+          manzana: fila[manzanaIndex]?.trim() || "No disponible",
+          lote: fila[loteIndex]?.trim() || "No disponible"
+        });
+      }
+      return datosCargados;
     }
 
-    // Cargar nombres al datalist para autocompletado
-    const datalist = document.getElementById("sugerenciasNombres");
-    datosCargados.forEach(item => {
-      const option = document.createElement("option");
-      option.value = item.nombre;
-      datalist.appendChild(option);
-    });
+    async function mostrarSugerencias() {
+      const input = document.getElementById("nombreInput");
+      const sugerenciasBox = document.getElementById("sugerenciasCustom");
+      const valor = input.value.trim().toLowerCase();
+      sugerenciasBox.innerHTML = "";
+      sugerenciasBox.style.display = "none";
 
-    return datosCargados;
-  }
+      if (valor === "") return;
 
-  async function verificar() {
-    const input = document.getElementById("nombreInput").value.trim().toLowerCase();
-    const resultado = document.getElementById("resultado");
-    resultado.innerHTML = "<div class='text-center'>Buscando...</div>";
-
-    try {
       const datos = await cargarDatos();
-      const encontrados = datos.filter(item => item.nombre.toLowerCase().includes(input));
+      const nombresUnicos = new Set();
+      const sugerencias = [];
 
-      if (encontrados.length === 0) {
-        resultado.innerHTML = "<div class='alert alert-danger'>No se encontraron resultados.</div>";
-        return;
+      for (const d of datos) {
+        if (d.nombre.toLowerCase().includes(valor) && !nombresUnicos.has(d.nombre)) {
+          nombresUnicos.add(d.nombre);
+          sugerencias.push(d);
+        }
       }
 
-      encontrados.sort((a, b) => a.nombre.localeCompare(b.nombre));
+      if (sugerencias.length === 0) return;
 
-      let html = `<div class="alert alert-success">Se encontraron ${encontrados.length} resultado(s):</div>`;
-      html += `<div class="accordion" id="accordionResultados">`;
-
-      encontrados.forEach((item, index) => {
-        html += `
-          <div class="accordion-item">
-            <h2 class="accordion-header" id="heading${index}">
-              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse${index}">
-                ${item.nombre}
-              </button>
-            </h2>
-            <div id="collapse${index}" class="accordion-collapse collapse" data-bs-parent="#accordionResultados">
-              <div class="accordion-body">
-                <strong>Sector / Barrio:</strong> ${item.sector}<br>
-                <strong>Manzana:</strong> ${item.manzana}<br>
-                <strong>Lote:</strong> ${item.lote}<br><br>
-                <strong>Lugar:</strong> Losa deportiva del Barrio 6B<br>
-                <strong></strong>(Junto al colegio Warma Kuyay)<br>
-                <strong>Fecha:</strong> Domingo 22 de junio<br>
-                <strong>Hora:</strong> 10:00 a.m.<br>
-                <strong>Requisito:</strong> Llevar DNI
-              </div>
-            </div>
-          </div>`;
+      sugerencias.forEach(s => {
+        const div = document.createElement("div");
+        div.textContent = s.nombre;
+        div.onclick = () => {
+          document.getElementById("nombreInput").value = s.nombre;
+          sugerenciasBox.innerHTML = "";
+          sugerenciasBox.style.display = "none";
+          verificar();
+        };
+        sugerenciasBox.appendChild(div);
       });
 
-      html += `</div>`;
-      resultado.innerHTML = html;
-
-    } catch (error) {
-      console.error("Error:", error);
-      resultado.innerHTML = `<div class="alert alert-warning">⚠️ Error al procesar los datos. Intenta más tarde.</div>`;
+      sugerenciasBox.style.display = "block";
     }
-  }
 
-  // Cargar sugerencias al inicio
-  cargarDatos();
-</script>
+    async function verificar() {
+      const input = document.getElementById("nombreInput").value.trim().toLowerCase();
+      const resultado = document.getElementById("resultado");
+      resultado.innerHTML = "<div class='text-center text-light'>Buscando...</div>";
 
+      try {
+        const datos = await cargarDatos();
+        const palabrasClave = input.split(" ").filter(p => p.length > 0);
+        const encontrados = datos.filter(item => {
+          const nombreLower = item.nombre.toLowerCase();
+          return palabrasClave.every(palabra => nombreLower.includes(palabra));
+        });
+
+        if (encontrados.length === 0) {
+          resultado.innerHTML = "<div class='alert alert-danger'>No se encontraron resultados.</div>";
+          return;
+        }
+
+        encontrados.sort((a, b) => a.nombre.localeCompare(b.nombre));
+
+        let html = `<div class="alert alert-success">Se encontraron ${encontrados.length} resultado(s):</div>`;
+        html += `<div class="accordion" id="accordionResultados">`;
+
+        encontrados.forEach((item, index) => {
+          html += `
+            <div class="accordion-item">
+              <h2 class="accordion-header" id="heading${index}">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse${index}">
+                  ${item.nombre}
+                </button>
+              </h2>
+              <div id="collapse${index}" class="accordion-collapse collapse" data-bs-parent="#accordionResultados">
+                <div class="accordion-body">
+                  <strong>Sector / Barrio:</strong> ${item.sector}<br>
+                  <strong>Manzana:</strong> ${item.manzana}<br>
+                  <strong>Lote:</strong> ${item.lote}<br><br>
+                  <strong>Lugar:</strong> Losa deportiva del Barrio 6B<br>
+                  <em>(Junto al colegio Warma Kuyay)</em><br>
+                  <strong>Fecha:</strong> Domingo 22 de junio<br>
+                  <strong>Hora:</strong> 10:00 a.m.<br>
+                  <strong>Requisito:</strong> Llevar DNI
+                </div>
+              </div>
+            </div>`;
+        });
+
+        html += `</div>`;
+        resultado.innerHTML = html;
+
+      } catch (error) {
+        console.error("Error:", error);
+        resultado.innerHTML = `<div class="alert alert-warning">⚠️ Error al procesar los datos. Intenta más tarde.</div>`;
+      }
+    }
+
+    cargarDatos();
+  </script>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
