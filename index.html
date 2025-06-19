@@ -30,85 +30,101 @@
     <div id="resultado" class="mt-4"></div>
   </div>
 
-  <script>
-    const URL_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRZymufO9zNb7XULXEt21mUWgytfrGsyV1c3tRRCLHJF5YxYRb75yiJc-lLfWajOI_27Y-olTwd9b7L/pub?gid=0&single=true&output=csv";
-    let datosCargados = [];
+ <script>
+  const URL_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRZymufO9zNb7XULXEt21mUWgytfrGsyV1c3tRRCLHJF5YxYRb75yiJc-lLfWajOI_27Y-olTwd9b7L/pub?gid=0&single=true&output=csv";
+  let datosCargados = [];
 
-    async function cargarDatos() {
-      if (datosCargados.length > 0) return datosCargados;
+  async function cargarDatos() {
+    if (datosCargados.length > 0) return datosCargados;
 
-      const res = await fetch(URL_CSV);
-      const texto = await res.text();
-      const filas = texto.trim().split("\n").map(fila => fila.split(","));
-      const headers = filas[0].map(h => h.toLowerCase().trim());
+    const res = await fetch(URL_CSV);
+    const texto = await res.text();
+    const filas = texto.trim().split("\n").map(fila => fila.split(","));
+    const headers = filas[0].map(h => h.toLowerCase().trim());
 
-      const nombreIndex = headers.findIndex(h => h.includes("nombre"));
-      const sectorIndex = headers.findIndex(h => h.includes("sector") || h.includes("barrio"));
-      const manzanaIndex = headers.findIndex(h => h.includes("manzana") || h.includes("mz"));
-      const loteIndex = headers.findIndex(h => h.includes("lote"));
+    const nombreIndex = headers.findIndex(h => h.includes("nombre"));
+    const sectorIndex = headers.findIndex(h => h.includes("sector") || h.includes("barrio"));
+    const manzanaIndex = headers.findIndex(h => h.includes("manzana") || h.includes("mz"));
+    const loteIndex = headers.findIndex(h => h.includes("lote"));
 
-      if (nombreIndex === -1) throw new Error("No se encontró la columna de 'nombre' en el archivo CSV.");
+    if (nombreIndex === -1) throw new Error("No se encontró la columna de 'nombre' en el archivo CSV.");
 
-      for (let i = 1; i < filas.length; i++) {
-        const fila = filas[i];
-        datosCargados.push({
-          nombre: fila[nombreIndex]?.trim() || "Sin nombre",
-          sector: fila[sectorIndex]?.trim() || "No disponible",
-          manzana: fila[manzanaIndex]?.trim() || "No disponible",
-          lote: fila[loteIndex]?.trim() || "No disponible"
-        });
-      }
-
-      return datosCargados;
+    for (let i = 1; i < filas.length; i++) {
+      const fila = filas[i];
+      datosCargados.push({
+        nombre: fila[nombreIndex]?.trim() || "Sin nombre",
+        sector: fila[sectorIndex]?.trim() || "No disponible",
+        manzana: fila[manzanaIndex]?.trim() || "No disponible",
+        lote: fila[loteIndex]?.trim() || "No disponible"
+      });
     }
 
-    async function verificar() {
-      const input = document.getElementById("nombreInput").value.trim().toLowerCase();
-      const resultado = document.getElementById("resultado");
-      resultado.innerHTML = "<div class='text-center'>Buscando...</div>";
+    // Cargar nombres al datalist para autocompletado
+    const datalist = document.getElementById("sugerenciasNombres");
+    datosCargados.forEach(item => {
+      const option = document.createElement("option");
+      option.value = item.nombre;
+      datalist.appendChild(option);
+    });
 
-      try {
-        const datos = await cargarDatos();
-        const encontrados = datos.filter(item => item.nombre.toLowerCase().includes(input));
+    return datosCargados;
+  }
 
-        if (encontrados.length === 0) {
-          resultado.innerHTML = "<div class='alert alert-danger'>No se encontraron resultados.</div>";
-          return;
-        }
+  async function verificar() {
+    const input = document.getElementById("nombreInput").value.trim().toLowerCase();
+    const resultado = document.getElementById("resultado");
+    resultado.innerHTML = "<div class='text-center'>Buscando...</div>";
 
-        // Opcional: ordenar alfabéticamente por nombre
-        encontrados.sort((a, b) => a.nombre.localeCompare(b.nombre));
+    try {
+      const datos = await cargarDatos();
+      const encontrados = datos.filter(item => item.nombre.toLowerCase().includes(input));
 
-        let html = `<div class="alert alert-success">Se encontraron ${encontrados.length} resultado(s):</div>`;
-        html += `<div class="accordion" id="accordionResultados">`;
+      if (encontrados.length === 0) {
+        resultado.innerHTML = "<div class='alert alert-danger'>No se encontraron resultados.</div>";
+        return;
+      }
 
-        encontrados.forEach((item, index) => {
-          html += `
-            <div class="accordion-item">
-              <h2 class="accordion-header" id="heading${index}">
-                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse${index}">
-                  ${item.nombre}
-                </button>
-              </h2>
-              <div id="collapse${index}" class="accordion-collapse collapse" data-bs-parent="#accordionResultados">
-                <div class="accordion-body">
-                  <strong>Sector / Barrio:</strong> ${item.sector}<br>
-                  <strong>Manzana:</strong> ${item.manzana}<br>
-                  <strong>Lote:</strong> ${item.lote}
-                </div>
+      encontrados.sort((a, b) => a.nombre.localeCompare(b.nombre));
+
+      let html = `<div class="alert alert-success">Se encontraron ${encontrados.length} resultado(s):</div>`;
+      html += `<div class="accordion" id="accordionResultados">`;
+
+      encontrados.forEach((item, index) => {
+        html += `
+          <div class="accordion-item">
+            <h2 class="accordion-header" id="heading${index}">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse${index}">
+                ${item.nombre}
+              </button>
+            </h2>
+            <div id="collapse${index}" class="accordion-collapse collapse" data-bs-parent="#accordionResultados">
+              <div class="accordion-body">
+                <strong>Sector / Barrio:</strong> ${item.sector}<br>
+                <strong>Manzana:</strong> ${item.manzana}<br>
+                <strong>Lote:</strong> ${item.lote}<br><br>
+                <strong>Lugar:</strong> Losa deportiva del Barrio 6B<br>
+                <strong></strong>(Junto al colegio Warma Kuyay)<br>
+                <strong>Fecha:</strong> Domingo 22 de junio<br>
+                <strong>Hora:</strong> 10:00 a.m.<br>
+                <strong>Requisito:</strong> Llevar DNI
               </div>
-            </div>`;
-        });
+            </div>
+          </div>`;
+      });
 
-        html += `</div>`;
-        resultado.innerHTML = html;
+      html += `</div>`;
+      resultado.innerHTML = html;
 
-      } catch (error) {
-        console.error("Error:", error);
-        resultado.innerHTML = `<div class="alert alert-warning">⚠️ Error al procesar los datos. Intenta más tarde.</div>`;
-      }
+    } catch (error) {
+      console.error("Error:", error);
+      resultado.innerHTML = `<div class="alert alert-warning">⚠️ Error al procesar los datos. Intenta más tarde.</div>`;
     }
-  </script>
+  }
+
+  // Cargar sugerencias al inicio
+  cargarDatos();
+</script>
+
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
